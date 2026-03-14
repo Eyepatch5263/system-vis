@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { DataFlowTooltip } from './data-flow-tooltip';
+import { BottleneckAdvisorPanel } from '@/components/simulation/bottleneck-advisor-panel';
 
 export function MetricsDashboard() {
   const { status, globalMetrics, componentMetrics, metricsHistory, bottlenecks, currentTimeSec, nodeLabels } = useSimulationStore();
@@ -265,10 +266,12 @@ export function MetricsDashboard() {
         </TooltipProvider>
       </div>
 
-      {/* Bottleneck details */}
       {bottlenecks.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-3">Bottleneck Details ({bottlenecks.length})</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold">Bottleneck Details ({bottlenecks.length})</h2>
+            <BottleneckAdvisorPanel />
+          </div>
           <div className="space-y-2">
             {bottlenecks.map((b, i) => (
               <Card

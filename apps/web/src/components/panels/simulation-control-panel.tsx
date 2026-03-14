@@ -8,6 +8,7 @@ import { useSimulationStore } from '@/stores/simulation-store';
 import { useArchitectureStore } from '@/stores/architecture-store';
 import { SIMULATION_PRESETS } from '@system-vis/shared';
 import { getSocket } from '@/lib/socket';
+import { BottleneckAdvisorPanel } from '@/components/simulation/bottleneck-advisor-panel';
 
 export function SimulationControlPanel() {
   const { status, currentTimeSec, globalMetrics, bottlenecks, setStatus, setTrafficPattern, applyTick, reset, setSimulationId, setNodeLabels } = useSimulationStore();
@@ -208,7 +209,10 @@ export function SimulationControlPanel() {
           <span>Latency: {globalMetrics.avgLatencyMs.toFixed(0)}ms</span>
           <span>Errors: {(globalMetrics.errorRate * 100).toFixed(1)}%</span>
           {bottlenecks.length > 0 && (
-            <Badge variant="destructive">{bottlenecks.length} bottleneck{bottlenecks.length > 1 ? 's' : ''}</Badge>
+            <>
+              <Badge variant="destructive">{bottlenecks.length} bottleneck{bottlenecks.length > 1 ? 's' : ''}</Badge>
+              <BottleneckAdvisorPanel />
+            </>
           )}
         </div>
       )}

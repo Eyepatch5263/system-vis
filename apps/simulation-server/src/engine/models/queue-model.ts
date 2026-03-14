@@ -44,6 +44,7 @@ export class QueueModel extends ComponentModel {
         timestamp: event.timestamp + processingTime,
         requestId: msg.requestId,
         nodeId: event.nodeId,
+        metadata: { enqueuedAt: msg.enqueuedAt },
       });
     }
 
@@ -51,7 +52,10 @@ export class QueueModel extends ComponentModel {
   }
 
   private _processDequeue(event: SimEvent): SimEvent[] {
-    this.state.completedLatencies.push(event.timestamp);
+    // Compute actual latency: time-in-queue + consumer processing time
+    const enqueuedAt = (event.metadata?.enqueuedAt as number) ?? event.timestamp;
+    const latency = event.timestamp - enqueuedAt;
+    this.state.completedLatencies.push(latency);
     return this.routeToDownstream(event.requestId, event.timestamp);
   }
 }
