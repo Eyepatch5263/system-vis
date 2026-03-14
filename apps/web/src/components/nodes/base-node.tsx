@@ -1,0 +1,46 @@
+'use client';
+
+import { Handle, Position } from '@xyflow/react';
+import { cn } from '@/lib/utils';
+import type { BaseNodeProps } from '@system-vis/shared';
+
+interface BaseNodeComponentProps {
+  data: BaseNodeProps;
+  icon: React.ReactNode;
+  color: string;
+  children?: React.ReactNode;
+}
+
+const statusColors = {
+  healthy: 'bg-green-500',
+  degraded: 'bg-yellow-500',
+  critical: 'bg-red-500',
+};
+
+export function BaseNode({ data, icon, color, children }: BaseNodeComponentProps) {
+  return (
+    <div className={cn(
+      'rounded-lg border-2 bg-card shadow-md min-w-[160px]',
+      data.healthStatus === 'critical' && 'border-red-500 shadow-red-500/25',
+      data.healthStatus === 'degraded' && 'border-yellow-500 shadow-yellow-500/25',
+      data.healthStatus === 'healthy' && 'border-border',
+    )}>
+      <Handle type="target" position={Position.Top} className="!bg-primary !w-3 !h-3" />
+
+      <div className="p-3">
+        <div className="flex items-center gap-2 mb-1">
+          <div className={cn('p-1.5 rounded', color)}>
+            {icon}
+          </div>
+          <div className="flex-1">
+            <div className="font-medium text-sm leading-tight">{data.label}</div>
+          </div>
+          <div className={cn('w-2.5 h-2.5 rounded-full', statusColors[data.healthStatus])} />
+        </div>
+        {children && <div className="mt-2 text-xs text-muted-foreground">{children}</div>}
+      </div>
+
+      <Handle type="source" position={Position.Bottom} className="!bg-primary !w-3 !h-3" />
+    </div>
+  );
+}

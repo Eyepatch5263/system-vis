@@ -1,0 +1,23 @@
+{
+  "name": "system-vis",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:sim\"",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:sim": "npm run dev --workspace=apps/simulation-server",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=apps/web && npm run build --workspace=apps/simulation-server",
+    "lint": "npm run lint --workspace=apps/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "groq-sdk": "^1.1.1"
+  }
+}
