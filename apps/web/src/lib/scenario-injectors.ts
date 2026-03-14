@@ -491,9 +491,12 @@ export function previewScenarioInjectorImpact(
   for (const edge of applied.edges) {
     const baseline = edgeById.get(edge.id);
     if (!baseline) continue;
-    if (jsonString(baseline.data) !== jsonString(edge.data)) {
-      const label = typeof edge.data.label === 'string' && edge.data.label.trim().length > 0
-        ? edge.data.label
+    const baselineData = withSafeEdgeData(baseline.data);
+    const edgeData = withSafeEdgeData(edge.data);
+
+    if (jsonString(baselineData) !== jsonString(edgeData)) {
+      const label = typeof edgeData.label === 'string' && edgeData.label.trim().length > 0
+        ? edgeData.label
         : `${edge.source} -> ${edge.target}`;
       changedEdgeLabels.push(label);
     }
@@ -507,3 +510,4 @@ export function previewScenarioInjectorImpact(
     changedEdgeLabels: changedEdgeLabels.slice(0, 8),
   };
 }
+
