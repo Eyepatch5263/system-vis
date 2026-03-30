@@ -15,6 +15,11 @@ const navItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
+  // Landing page gets full width — no sidebar
+  if (pathname === '/') {
+    return <div className="h-screen overflow-auto bg-background">{children}</div>;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
