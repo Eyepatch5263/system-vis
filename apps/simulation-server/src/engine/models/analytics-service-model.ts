@@ -5,14 +5,24 @@ export class AnalyticsServiceModel extends ComponentModel {
   private bufferedEvents = 0;
   private aggregationBuffer = 1000;
 
+  protected getTotalCapacity(): number {
+    const config = this.config as AnalyticsServiceNodeProps;
+    return Math.max(config.instances, 1) * Math.max(config.maxConcurrentRequests, 1);
+  }
+
+  getMemoryUtilization(): number {
+    // Analytics keeps large in-memory aggregation buffers independent of CPU load.
+    const bufferPressure = Math.min((this.bufferedEvents / this.aggregationBuffer) * 60, 60);
+    return Math.min(this.state.cpuUtilization * 0.4 + bufferPressure, 100);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     switch (event.type) {
       case SimEventType.REQUEST_ARRIVE:
       case SimEventType.REQUEST_ROUTE: {
         const config = this.config as AnalyticsServiceNodeProps;
-        const totalCapacity = config.instances * config.maxConcurrentRequests;
 
-        if (this.state.activeRequests >= totalCapacity) {
+        if (this.state.activeRequests >= this.getTotalCapacity()) {
           this.state.totalFailed++;
           return [];
         }

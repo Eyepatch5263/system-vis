@@ -26,14 +26,14 @@ export function collectMetrics(
       activeRequests: state.activeRequests,
       queueDepth: state.queueDepth,
       cpuUtilization: state.cpuUtilization,
-      memoryUtilization: Math.min(state.cpuUtilization * 0.6, 100),
+      memoryUtilization: model.getMemoryUtilization(),
       latencyP50Ms: percentile(latencies, 0.5),
       latencyP95Ms: percentile(latencies, 0.95),
       latencyP99Ms: percentile(latencies, 0.99),
       errorCount: state.totalFailed,
       errorRate: state.totalProcessed > 0 ? state.totalFailed / (state.totalProcessed + state.totalFailed) : 0,
       connectionPoolUsage: state.activeRequests / 100,
-      cacheHitRate: 0,
+      cacheHitRate: model.getCacheHitRate(),
       throughput: state.totalProcessed / Math.max(tickTimeSec, 0.1),
     };
 

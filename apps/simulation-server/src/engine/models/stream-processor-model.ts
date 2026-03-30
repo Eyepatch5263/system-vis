@@ -5,14 +5,24 @@ export class StreamProcessorModel extends ComponentModel {
   private processedEvents = 0;
   private lagMs = 0;
 
+  protected getTotalCapacity(): number {
+    const config = this.config as StreamProcessorNodeProps;
+    return Math.max(config.instances, 1) * Math.max(config.maxConcurrentRequests, 1);
+  }
+
+  getMemoryUtilization(): number {
+    // Memory reflects lag buffer accumulation in addition to base load.
+    const lagFactor = Math.min(this.lagMs / 10000, 1) * 40; // up to +40% from lag
+    return Math.min(this.state.cpuUtilization * 0.5 + lagFactor, 100);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     switch (event.type) {
       case SimEventType.REQUEST_ARRIVE:
       case SimEventType.REQUEST_ROUTE: {
         const config = this.config as StreamProcessorNodeProps;
-        const totalCapacity = config.instances * config.maxConcurrentRequests;
 
-        if (this.state.activeRequests >= totalCapacity) {
+        if (this.state.activeRequests >= this.getTotalCapacity()) {
           this.state.totalFailed++;
           return [];
         }

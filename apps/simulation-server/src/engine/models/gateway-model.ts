@@ -32,7 +32,11 @@ export class GatewayModel extends ComponentModel {
       }];
     }
 
+    // Accumulate activeRequests as a per-tick throughput counter (reset each tick
+    // by resetTickCounters). This lets peakActiveRequests reflect real load.
+    this.state.activeRequests++;
     this.state.totalProcessed++;
+    this.updateUtilization();
     const processingTime = this.getProcessingTime();
 
     if (this.shouldFail()) {
@@ -47,5 +51,18 @@ export class GatewayModel extends ComponentModel {
     }
 
     return this.routeToDownstream(event.requestId, event.timestamp + processingTime);
+  }
+
+  updateUtilization(): void {
+    // For a gateway, CPU reflects how much of the rate limit is being consumed
+    // right now — semantically cleaner than a generic concurrency ratio.
+    const config = this.config as APIGatewayNodeProps;
+    const rateFraction = this.requestsThisSec / Math.max(config.rateLimitRPS, 1);
+    this.state.cpuUtilization = Math.min(rateFraction * 100, 100);
+  }
+
+  resetTickCounters(): void {
+    this.state.activeRequests = 0;
+    super.resetTickCounters();
   }
 }

@@ -22,6 +22,13 @@ export abstract class ComponentModel {
   public state: ComponentState;
   protected config: ArchNodeData;
   protected downstreamNodeIds: string[];
+  /**
+   * High-watermark of activeRequests observed during the current tick.
+   * Used instead of end-of-tick activeRequests for CPU calculation, so that
+   * fast nodes (where requests start AND complete within one tick) still show
+   * non-zero utilization.
+   */
+  private peakActiveRequests = 0;
   protected recentRequests: Array<{
     requestId: string;
     stage: 'arriving' | 'processing' | 'completing';
@@ -103,12 +110,34 @@ export abstract class ComponentModel {
     return this.config;
   }
 
+  protected getTotalCapacity(): number {
+    return Math.max(this.config.maxConcurrentRequests, 1);
+  }
+
+  getMemoryUtilization(): number {
+    return Math.min(this.state.cpuUtilization * 0.6, 100);
+  }
+
+  getCacheHitRate(): number {
+    return 0;
+  }
+
   updateUtilization(): void {
-    this.state.cpuUtilization =
-      (this.state.activeRequests / Math.max(this.config.maxConcurrentRequests, 1)) * 100;
+    // Track the peak activeRequests seen during this tick. This ensures nodes
+    // that process requests faster than one tick (including pass-through nodes
+    // where the increment and decrement happen in the same handler call) still
+    // report non-zero CPU utilization.
+    if (this.state.activeRequests > this.peakActiveRequests) {
+      this.peakActiveRequests = this.state.activeRequests;
+    }
+    this.state.cpuUtilization = (this.peakActiveRequests / this.getTotalCapacity()) * 100;
   }
 
   resetTickCounters(): void {
+    // Carry over any still-in-flight requests as the floor for next tick's peak.
+    // This keeps multi-tick requests visible in the next tick's utilization even
+    // before new events are processed.
+    this.peakActiveRequests = this.state.activeRequests;
     if (this.state.completedLatencies.length > 1000) {
       this.state.completedLatencies = this.state.completedLatencies.slice(-500);
     }

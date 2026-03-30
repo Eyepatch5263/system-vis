@@ -5,14 +5,18 @@ import type { ServiceNodeProps } from '@system-vis/shared';
 export class ServiceModel extends ComponentModel {
   private waitQueue: { requestId: string; arrivalTime: number }[] = [];
 
+  protected getTotalCapacity(): number {
+    const config = this.config as ServiceNodeProps;
+    return Math.max(config.instances, 1) * Math.max(config.maxConcurrentRequests, 1);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     const config = this.config as ServiceNodeProps;
-    const totalCapacity = config.instances * config.maxConcurrentRequests;
 
     switch (event.type) {
       case SimEventType.REQUEST_ARRIVE:
       case SimEventType.REQUEST_ROUTE: {
-        if (this.state.activeRequests < totalCapacity) {
+        if (this.state.activeRequests < this.getTotalCapacity()) {
           this.state.activeRequests++;
           this.updateUtilization();
           const processingTime = this.getProcessingTime();
@@ -37,7 +41,7 @@ export class ServiceModel extends ComponentModel {
         } else {
           this.waitQueue.push({ requestId: event.requestId, arrivalTime: event.timestamp });
           this.state.queueDepth = this.waitQueue.length;
-          if (this.waitQueue.length > config.maxConcurrentRequests * 2) {
+          if (this.waitQueue.length > this.getTotalCapacity() * 2) {
             this.waitQueue.shift();
             this.state.queueDepth = this.waitQueue.length;
             return [{

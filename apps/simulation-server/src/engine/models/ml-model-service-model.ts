@@ -2,14 +2,23 @@ import { SimEventType, type SimEvent, type MLModelServiceNodeProps } from '@syst
 import { ComponentModel, sampleNormal } from '../component-model.js';
 
 export class MLModelServiceModel extends ComponentModel {
+  protected getTotalCapacity(): number {
+    const config = this.config as MLModelServiceNodeProps;
+    return Math.max(config.instances, 1) * Math.max(config.maxConcurrentRequests, 1);
+  }
+
+  getMemoryUtilization(): number {
+    // ML inference is GPU/memory-bound: memory tracks closely with CPU (model weights always loaded).
+    return Math.min(this.state.cpuUtilization * 0.85 + 15, 100);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     switch (event.type) {
       case SimEventType.REQUEST_ARRIVE:
       case SimEventType.REQUEST_ROUTE: {
         const config = this.config as MLModelServiceNodeProps;
-        const totalCapacity = config.instances * config.maxConcurrentRequests;
 
-        if (this.state.activeRequests >= totalCapacity) {
+        if (this.state.activeRequests >= this.getTotalCapacity()) {
           this.state.totalFailed++;
           return [];
         }

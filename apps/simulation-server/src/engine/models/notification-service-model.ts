@@ -4,6 +4,11 @@ import { ComponentModel, sampleNormal } from '../component-model.js';
 export class NotificationServiceModel extends ComponentModel {
   private notificationQueue = 0;
 
+  protected getTotalCapacity(): number {
+    const config = this.config as NotificationServiceNodeProps;
+    return Math.max(config.instances, 1) * Math.max(config.maxConcurrentRequests, 1);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     switch (event.type) {
       case SimEventType.REQUEST_ARRIVE:
@@ -21,7 +26,8 @@ export class NotificationServiceModel extends ComponentModel {
         this.state.queueDepth = this.notificationQueue;
         this.updateUtilization();
 
-        const enqueueTime = sampleNormal(10, 5);
+        const deliveryMean = Math.max(1, config.baseLatencyMs);
+        const enqueueTime = sampleNormal(deliveryMean, config.latencyStdDevMs);
 
         if (this.shouldFail()) {
           return [{

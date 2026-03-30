@@ -4,14 +4,18 @@ import { ComponentModel, sampleNormal } from '../component-model.js';
 export class PaymentGatewayModel extends ComponentModel {
   private successRate = 0.98; // 2% transaction failure rate
 
+  protected getTotalCapacity(): number {
+    const config = this.config as PaymentGatewayNodeProps;
+    return Math.max(config.instances, 1) * Math.max(config.maxConcurrentRequests, 1);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     switch (event.type) {
       case SimEventType.REQUEST_ARRIVE:
       case SimEventType.REQUEST_ROUTE: {
         const config = this.config as PaymentGatewayNodeProps;
-        const totalCapacity = config.instances * config.maxConcurrentRequests;
 
-        if (this.state.activeRequests >= totalCapacity) {
+        if (this.state.activeRequests >= this.getTotalCapacity()) {
           this.state.totalFailed++;
           return [];
         }

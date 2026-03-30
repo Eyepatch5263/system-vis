@@ -10,7 +10,10 @@ export class LoadBalancerModel extends ComponentModel {
     }
 
     const config = this.config as LoadBalancerNodeProps;
+    // Accumulate as per-tick throughput counter, reset each tick by resetTickCounters.
+    this.state.activeRequests++;
     this.state.totalProcessed++;
+    this.updateUtilization();
     const processingTime = this.getProcessingTime();
 
     if (this.shouldFail() || this.downstreamNodeIds.length === 0) {
@@ -47,5 +50,10 @@ export class LoadBalancerModel extends ComponentModel {
       requestId: event.requestId,
       nodeId: this.downstreamNodeIds[targetIdx],
     }];
+  }
+
+  resetTickCounters(): void {
+    this.state.activeRequests = 0;
+    super.resetTickCounters();
   }
 }

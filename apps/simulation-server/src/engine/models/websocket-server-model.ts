@@ -4,14 +4,18 @@ import { ComponentModel, sampleNormal } from '../component-model.js';
 export class WebSocketServerModel extends ComponentModel {
   private activeConnections = 0;
 
+  protected getTotalCapacity(): number {
+    const config = this.config as WebSocketServerNodeProps;
+    return Math.max(config.instances, 1) * Math.max(config.maxConcurrentRequests, 1);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     switch (event.type) {
       case SimEventType.REQUEST_ARRIVE:
       case SimEventType.REQUEST_ROUTE: {
         const config = this.config as WebSocketServerNodeProps;
-        const totalCapacity = config.instances * config.maxConcurrentRequests;
 
-        if (this.activeConnections >= config.maxConnections || this.state.activeRequests >= totalCapacity) {
+        if (this.activeConnections >= config.maxConnections || this.state.activeRequests >= this.getTotalCapacity()) {
           this.state.totalFailed++;
           return [];
         }

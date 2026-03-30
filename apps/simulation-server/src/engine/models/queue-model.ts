@@ -4,6 +4,18 @@ import { ComponentModel, sampleNormal } from '../component-model.js';
 export class QueueModel extends ComponentModel {
   private messageQueue: { requestId: string; enqueuedAt: number }[] = [];
 
+  protected getTotalCapacity(): number {
+    const config = this.config as QueueNodeProps;
+    return Math.max(config.consumerCount, 1);
+  }
+
+  getMemoryUtilization(): number {
+    // Queue memory is driven by the number of unprocessed messages buffered in RAM.
+    const config = this.config as QueueNodeProps;
+    const queuePressure = Math.min((this.messageQueue.length / Math.max(config.maxQueueDepth, 1)) * 80, 80);
+    return Math.min(queuePressure + this.state.cpuUtilization * 0.2, 100);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     if (event.type !== SimEventType.REQUEST_ARRIVE && event.type !== SimEventType.REQUEST_ROUTE) {
       if (event.type === SimEventType.REQUEST_DEQUEUE) {
@@ -37,6 +49,8 @@ export class QueueModel extends ComponentModel {
     for (let i = 0; i < availableConsumers && this.messageQueue.length > 0; i++) {
       const msg = this.messageQueue.shift()!;
       this.state.queueDepth = this.messageQueue.length;
+      this.state.activeRequests++;
+      this.updateUtilization();
       const processingTime = sampleNormal(config.consumerProcessingMs, config.consumerProcessingMs * 0.2);
       results.push({
         id: `evt_deq_${msg.requestId}`,
@@ -52,6 +66,8 @@ export class QueueModel extends ComponentModel {
   }
 
   private _processDequeue(event: SimEvent): SimEvent[] {
+    this.state.activeRequests = Math.max(0, this.state.activeRequests - 1);
+    this.updateUtilization();
     // Compute actual latency: time-in-queue + consumer processing time
     const enqueuedAt = (event.metadata?.enqueuedAt as number) ?? event.timestamp;
     const latency = event.timestamp - enqueuedAt;

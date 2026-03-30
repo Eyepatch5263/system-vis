@@ -2,13 +2,18 @@ import { SimEventType, type SimEvent, type SearchEngineNodeProps } from '@system
 import { ComponentModel, sampleNormal } from '../component-model.js';
 
 export class SearchEngineModel extends ComponentModel {
+  protected getTotalCapacity(): number {
+    const config = this.config as SearchEngineNodeProps;
+    return Math.max((config as any).instances ?? 1, 1) * Math.max(config.maxConcurrentRequests, 1);
+  }
+
   handleEvent(event: SimEvent): SimEvent[] {
     switch (event.type) {
       case SimEventType.REQUEST_ARRIVE:
       case SimEventType.REQUEST_ROUTE: {
         const config = this.config as SearchEngineNodeProps;
 
-        if (this.state.activeRequests >= config.maxConcurrentRequests) {
+        if (this.state.activeRequests >= this.getTotalCapacity()) {
           this.state.totalFailed++;
           return [];
         }
